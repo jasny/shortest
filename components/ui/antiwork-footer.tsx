@@ -46,11 +46,7 @@ export default function AntiworkFooter() {
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center">
             <div className="flex flex-col items-start">
-              <a
-                href="https://antiwork.com"
-                target="_blank"
-                rel="noopener"
-              >
+              <a href="https://antiwork.com" target="_blank" rel="noopener">
                 <svg
                   width="200"
                   height="40"
