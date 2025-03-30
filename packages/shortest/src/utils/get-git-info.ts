@@ -1,4 +1,4 @@
-import { simpleGit, SimpleGit, CleanOptions } from "simple-git";
+import { simpleGit, SimpleGit } from "simple-git";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 
@@ -14,7 +14,7 @@ export const getGitInfo = async (): Promise<GitInfo> => {
   const log = getLogger();
 
   try {
-    const git: SimpleGit = simpleGit().clean(CleanOptions.FORCE);
+    const git: SimpleGit = simpleGit();
     const branchInfo = await git.branch();
     return {
       branch: branchInfo.current,
