@@ -89,6 +89,7 @@ export default [
         },
       ],
       "prefer-promise-reject-errors": "error",
+      "prefer-numeric-literals": "error",
       "no-useless-call": "error",
       "no-useless-computed-key": "error",
       "object-shorthand": "error",
