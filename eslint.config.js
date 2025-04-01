@@ -76,6 +76,11 @@ export default [
       "logical-assignment-operators": "error",
       "prefer-arrow-callback": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
+      "padding-line-between-statements": [
+          "error",
+          { blankLine: "always", prev: "import", next: "*" },
+          { blankLine: "never", prev: "import", next: "import" },
+        ],
       "prettier/prettier": [
         "error",
         {
