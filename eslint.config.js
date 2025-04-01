@@ -82,6 +82,7 @@ export default [
           trailingComma: "all",
         },
       ],
+      "prefer-promise-reject-errors": "error",
       "zod/require-zod-schema-types": "error",
     },
     settings: {
