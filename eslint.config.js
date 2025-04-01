@@ -76,6 +76,7 @@ export default [
       "no-alert": "error",
       "logical-assignment-operators": "error",
       "prefer-arrow-callback": "error",
+      "prefer-spread": "error",
       "prefer-object-spread": "error",
       "import/order": ["error", { alphabetize: { order: "asc" } }],
       "import/no-duplicates": "error",
