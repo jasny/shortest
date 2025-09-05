@@ -24,7 +24,8 @@ export const updateUserSubscription = async (
 };
 
 const createUser = async (clerkId: string): Promise<User> => {
-  const clerkUser = await clerkClient.users.getUser(clerkId);
+  const clerk = await clerkClient();
+  const clerkUser = await clerk.users.getUser(clerkId);
   const newUser: NewUser = {
     clerkId,
     role: "member",
@@ -53,7 +54,7 @@ export const getUserByClerkId = async (clerkId: string): Promise<User> => {
 };
 
 export const getPullRequests = async (): Promise<PullRequest[]> => {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) {
     throw new Error("User not authenticated");
   }

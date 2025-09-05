@@ -13,10 +13,10 @@ const matchTestPatterns = (testPatterns: string[], filePath: string) =>
   );
 
 export const getOctokit = async () => {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) throw new Error("Clerk: User not authenticated");
 
-  const clerk = clerkClient();
+  const clerk = await clerkClient();
   const [{ token: githubToken }] = await clerk.users
     .getUserOauthAccessToken(userId, "oauth_github")
     .then(({ data }) => data);
