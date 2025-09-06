@@ -48,11 +48,11 @@ const { mockDiscoverFlows, mockWriteTests } = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/core/crawler", () => ({
-  CrawlerRunner: vi.fn().mockImplementation(() => ({
+vi.mock("@/core/explorer", () => ({
+  ExplorerRunner: vi.fn().mockImplementation(() => ({
     discoverFlows: mockDiscoverFlows,
   })),
-  writeCrawlerTests: mockWriteTests,
+  writeExplorerTests: mockWriteTests,
 }));
 
 vi.mock("@/log", () => ({
@@ -90,7 +90,7 @@ describe("shortest command", () => {
       shortestCommand.options.find((opt) => opt.long === "--no-cache"),
     ).toBeDefined();
     expect(
-      shortestCommand.options.find((opt) => opt.long === "--crawl"),
+      shortestCommand.options.find((opt) => opt.long === "--explore"),
     ).toBeDefined();
   });
 
@@ -148,8 +148,8 @@ describe("shortest command", () => {
     expect(cleanUpCache).toHaveBeenCalled();
   });
 
-  test("executeCrawlerCommand runs crawler and writes tests", async () => {
-    await shortestCommand.parseAsync(["--crawl", "out"], { from: "user" });
+  test("executeExplorerCommand runs explorer and writes tests", async () => {
+    await shortestCommand.parseAsync(["--explore", "out"], { from: "user" });
 
     const callback = vi.mocked(executeCommand).mock.calls[0][2];
     await callback({});
@@ -162,9 +162,9 @@ describe("shortest command", () => {
     );
   });
 
-  test("executeCrawlerCommand infers directory from config", async () => {
+  test("executeExplorerCommand infers directory from config", async () => {
     mockGetConfig.mockReturnValue({ testPattern: "tests/**/*.test.ts" });
-    await shortestCommand.parseAsync(["--crawl"], { from: "user" });
+    await shortestCommand.parseAsync(["--explore"], { from: "user" });
 
     const callback = vi.mocked(executeCommand).mock.calls[0][2];
     await callback({});
@@ -175,9 +175,9 @@ describe("shortest command", () => {
     );
   });
 
-  test("executeCrawlerCommand errors when directory cannot be determined", async () => {
+  test("executeExplorerCommand errors when directory cannot be determined", async () => {
     mockGetConfig.mockReturnValue({ testPattern: "**/*.test.ts" });
-    await shortestCommand.parseAsync(["--crawl"], { from: "user" });
+    await shortestCommand.parseAsync(["--explore"], { from: "user" });
 
     const callback = vi.mocked(executeCommand).mock.calls[0][2];
 

@@ -1,4 +1,4 @@
-export class CrawlerRun {
+export class ExplorerRun {
   public steps: any[] = [];
 
   addStep(step: any): void {

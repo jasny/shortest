@@ -8,7 +8,7 @@ import {
 import { executeCommand } from "@/cli/utils/command-builder";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
-import { CrawlerRunner, writeCrawlerTests } from "@/core/crawler";
+import { ExplorerRunner, writeExplorerTests } from "@/core/explorer";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger } from "@/log";
 import { LOG_LEVELS } from "@/log/config";
@@ -54,7 +54,7 @@ shortestCommand
   )
   .option("--no-cache", "Disable test action caching")
   .option(
-    "--crawl [dir]",
+    "--explore [dir]",
     "Discover user flows and generate tests. Optionally specify output directory",
   )
   .argument(
@@ -65,8 +65,8 @@ shortestCommand
   .action(async (testPattern, _options, command) => {
     await executeCommand(command.name(), command.optsWithGlobals(), async () => {
       const opts = command.optsWithGlobals();
-      if (opts.crawl !== undefined) {
-        await executeCrawlerCommand(opts.crawl, opts);
+      if (opts.explore !== undefined) {
+        await executeExplorerCommand(opts.explore, opts);
       } else {
         await executeTestRunnerCommand(testPattern, opts);
       }
@@ -125,17 +125,20 @@ const deriveTestDirectory = (pattern: string): string | null => {
   return dir || null;
 };
 
-const executeCrawlerCommand = async (dirOption: string | boolean, options: any) => {
+const executeExplorerCommand = async (
+  dirOption: string | boolean,
+  options: any,
+) => {
   const log = getLogger();
 
   const cliOptions: CLIOptions = {
     headless: options.headless,
     baseUrl: options.target,
     noCache: !options.cache,
-    testPattern: undefined,
+    testPattern: undefined as any,
   };
 
-  log.trace("Initializing config for crawler", { cliOptions });
+  log.trace("Initializing config for explorer", { cliOptions });
   await initializeConfig({ cliOptions });
   const config = getConfig();
 
@@ -146,14 +149,14 @@ const executeCrawlerCommand = async (dirOption: string | boolean, options: any) 
 
   if (!targetDir) {
     throw new ShortestError(
-      "Could not determine test directory from configuration. Please specify one using --crawl <dir>.",
+      "Could not determine test directory from configuration. Please specify one using --explore <dir>.",
     );
   }
 
-  log.trace("Running crawler", { targetDir });
-  const runner = new CrawlerRunner(config);
+  log.trace("Running explorer", { targetDir });
+  const runner = new ExplorerRunner(config);
   const flows = await runner.discoverFlows();
-  await writeCrawlerTests(flows, targetDir);
+  await writeExplorerTests(flows, targetDir);
 };
 
 export { deriveTestDirectory };

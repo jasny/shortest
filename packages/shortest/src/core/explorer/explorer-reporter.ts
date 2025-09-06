@@ -2,7 +2,7 @@ import pc from "picocolors";
 import { UserFlow } from "./user-flow";
 import { getLogger, Log } from "@/log";
 
-export class CrawlerReporter {
+export class ExplorerReporter {
   private log: Log;
 
   constructor() {

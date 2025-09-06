@@ -19,7 +19,7 @@ const buildTestContent = (flow: UserFlow): string => {
   );
 };
 
-export const writeCrawlerTests = async (
+export const writeExplorerTests = async (
   flows: UserFlow[],
   baseDir: string,
 ): Promise<void> => {

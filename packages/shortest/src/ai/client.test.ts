@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "./client";
-import { buildCrawlerPrompt } from "./prompts/crawler-prompt-builder";
+import { buildExplorerPrompt } from "./prompts/explorer-prompt-builder";
 import { buildTestPrompt } from "./prompts/test-prompt-builder";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
-import { CrawlerRun } from "@/core/crawler/crawler-run";
+import { ExplorerRun } from "@/core/explorer/explorer-run";
 import { ActionInput, ToolResult } from "@/types/browser";
 import { AIError } from "@/utils/errors";
 
@@ -156,10 +156,10 @@ describe("AIClient", () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it("records steps in crawler runs", async () => {
+    it("records steps in explorer runs", async () => {
       const mockGenerateText = (await import("ai")).generateText as any;
-      const crawlerRun = new CrawlerRun();
-      const addStepSpy = vi.spyOn(crawlerRun, "addStep");
+      const explorerRun = new ExplorerRun();
+      const addStepSpy = vi.spyOn(explorerRun, "addStep");
 
       mockGenerateText.mockImplementation(async (opts: any) => {
         await opts.onStepFinish({
@@ -182,8 +182,8 @@ describe("AIClient", () => {
         };
       });
 
-      const crawlClient = new AIClient({ browserTool, crawlerRun });
-      await crawlClient.runAction("crawl prompt");
+      const exploreClient = new AIClient({ browserTool, explorerRun });
+      await exploreClient.runAction("explore prompt");
 
       expect(addStepSpy).toHaveBeenCalledWith({
         action: "click",
@@ -314,7 +314,7 @@ describe("AIClient", () => {
       );
     });
 
-    it("uses crawler prompt when crawlerRun is provided", async () => {
+    it("uses explorer prompt when explorerRun is provided", async () => {
       const mockGenerateText = (await import("ai")).generateText as any;
       mockGenerateText.mockResolvedValueOnce({
         text: '{"status":"passed","reason":"ok"}',
@@ -324,11 +324,11 @@ describe("AIClient", () => {
         response: { messages: [] },
       });
 
-      const crawlClient = new AIClient({ browserTool, crawlerRun: new CrawlerRun() });
-      await crawlClient.runAction("crawl prompt");
+      const exploreClient = new AIClient({ browserTool, explorerRun: new ExplorerRun() });
+      await exploreClient.runAction("explore prompt");
 
       expect(mockGenerateText).toHaveBeenCalledWith(
-        expect.objectContaining({ system: buildCrawlerPrompt() }),
+        expect.objectContaining({ system: buildExplorerPrompt() }),
       );
     });
   });
