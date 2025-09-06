@@ -215,7 +215,10 @@ export class TestRunner {
       ]
         .filter(Boolean)
         .join("\n");
-      const aiClient = new AIClient({ browserTool, testRun });
+      const aiClient = new AIClient({
+        browserTool,
+        testRun,
+      });
       aiResponse = await aiClient.runAction(prompt);
     } finally {
       this.log.resetGroup();
