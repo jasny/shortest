@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AIClient } from "./client";
+import { buildCrawlerPrompt } from "./prompts/crawler-prompt-builder";
+import { buildTestPrompt } from "./prompts/test-prompt-builder";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { createTestCase } from "@/core/runner/test-case";
 import { TestRun } from "@/core/runner/test-run";
+import { CrawlerRun } from "@/core/crawler/crawler-run";
 import { ActionInput, ToolResult } from "@/types/browser";
 import { AIError } from "@/utils/errors";
 
@@ -153,6 +156,42 @@ describe("AIClient", () => {
       expect(result).toEqual(mockResponse);
     });
 
+    it("records steps in crawler runs", async () => {
+      const mockGenerateText = (await import("ai")).generateText as any;
+      const crawlerRun = new CrawlerRun();
+      const addStepSpy = vi.spyOn(crawlerRun, "addStep");
+
+      mockGenerateText.mockImplementation(async (opts: any) => {
+        await opts.onStepFinish({
+          stepType: "tool",
+          text: "clicked",
+          toolCalls: [],
+          toolResults: [
+            { args: { action: "click", selector: "#btn" }, result: { output: "ok" } },
+          ],
+          finishReason: "tool-calls",
+          isContinued: false,
+          usage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
+        });
+        return {
+          text: '{"status":"passed","reason":"ok"}',
+          finishReason: "stop",
+          warnings: [],
+          usage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
+          response: { messages: [] },
+        };
+      });
+
+      const crawlClient = new AIClient({ browserTool, crawlerRun });
+      await crawlClient.runAction("crawl prompt");
+
+      expect(addStepSpy).toHaveBeenCalledWith({
+        action: "click",
+        selector: "#btn",
+        result: "ok",
+      });
+    });
+
     describe("error handling", () => {
       it("retries on retryable errors", async () => {
         const error = new Error("Network error");
@@ -254,6 +293,43 @@ describe("AIClient", () => {
           type: "max-retries-reached",
         });
       });
+    });
+  });
+
+  describe("system prompt selection", () => {
+    it("uses test prompt when testRun is provided", async () => {
+      const mockGenerateText = (await import("ai")).generateText as any;
+      mockGenerateText.mockResolvedValueOnce({
+        text: '{"status":"passed","reason":"ok"}',
+        finishReason: "stop",
+        warnings: [],
+        usage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
+        response: { messages: [] },
+      });
+
+      await client.runAction("test prompt");
+
+      expect(mockGenerateText).toHaveBeenCalledWith(
+        expect.objectContaining({ system: buildTestPrompt() }),
+      );
+    });
+
+    it("uses crawler prompt when crawlerRun is provided", async () => {
+      const mockGenerateText = (await import("ai")).generateText as any;
+      mockGenerateText.mockResolvedValueOnce({
+        text: '{"status":"passed","reason":"ok"}',
+        finishReason: "stop",
+        warnings: [],
+        usage: { completionTokens: 0, promptTokens: 0, totalTokens: 0 },
+        response: { messages: [] },
+      });
+
+      const crawlClient = new AIClient({ browserTool, crawlerRun: new CrawlerRun() });
+      await crawlClient.runAction("crawl prompt");
+
+      expect(mockGenerateText).toHaveBeenCalledWith(
+        expect.objectContaining({ system: buildCrawlerPrompt() }),
+      );
     });
   });
 });
