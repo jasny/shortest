@@ -260,4 +260,4 @@ export const test: TestAPI = Object.assign(
 export const shortest: TestAPI = test;
 export type { ShortestConfig } from "@/types/config";
 export { APIRequest };
-export { CrawlerRunner as Crawler } from "@/core/crawler";
+export { ExplorerRunner as Explorer } from "@/core/explorer";

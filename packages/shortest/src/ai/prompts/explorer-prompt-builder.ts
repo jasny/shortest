@@ -1,7 +1,7 @@
 import { SYSTEM_PROMPT_TEMPLATE } from "./index";
 import { buildSystemPrompt } from "./utils/build-system-prompt";
 
-export const CRAWLER_PROMPT = buildSystemPrompt(SYSTEM_PROMPT_TEMPLATE, {
+export const EXPLORER_PROMPT = buildSystemPrompt(SYSTEM_PROMPT_TEMPLATE, {
   TASK_BLOCK: [
     "You are a test automation expert exploring a web application in a Chromium browser.",
     "Use the provided tools (`click`, `type`, `scroll`, `screenshot`, `get_dom`, `set_viewport`) to act like a human visitor.",
@@ -39,4 +39,4 @@ export const CRAWLER_PROMPT = buildSystemPrompt(SYSTEM_PROMPT_TEMPLATE, {
   ].join("\n"),
 });
 
-export const buildCrawlerPrompt = () => CRAWLER_PROMPT;
+export const buildExplorerPrompt = () => EXPLORER_PROMPT;

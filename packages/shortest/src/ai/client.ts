@@ -9,14 +9,14 @@ import {
 import { createProvider } from "@/ai/provider";
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
 import { BrowserTool } from "@/browser/core/browser-tool";
-import { CrawlerRun } from "@/core/crawler/crawler-run";
+import { ExplorerRun } from "@/core/explorer/explorer-run";
 import { TestRun } from "@/core/runner/test-run";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { createToolRegistry, ToolRegistry } from "@/tools/index";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
 import { AIConfig } from "@/types/config";
-import { buildCrawlerPrompt } from "./prompts/crawler-prompt-builder";
+import { buildExplorerPrompt } from "./prompts/explorer-prompt-builder";
 import { buildTestPrompt } from "./prompts/test-prompt-builder";
 import {
   getErrorDetails,
@@ -81,7 +81,7 @@ export class AIClient {
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
   private testRun?: TestRun;
-  private crawlerRun?: CrawlerRun;
+  private explorerRun?: ExplorerRun;
   private log: Log;
   private usage: TokenUsage;
   private apiRequestCount: number = 0;
@@ -92,22 +92,22 @@ export class AIClient {
   constructor({
     browserTool,
     testRun,
-    crawlerRun,
-  }: {
-    browserTool: BrowserTool;
-    testRun?: TestRun;
-    crawlerRun?: CrawlerRun;
-  }) {
+      explorerRun,
+    }: {
+      browserTool: BrowserTool;
+      testRun?: TestRun;
+      explorerRun?: ExplorerRun;
+    }) {
     this.log = getLogger();
     this.log.trace("Initializing AIClient");
     this.client = createProvider(getConfig().ai);
     this.configAi = getConfig().ai;
     this.browserTool = browserTool;
     this.testRun = testRun;
-    this.crawlerRun = crawlerRun;
-    this.systemPrompt = testRun
-      ? buildTestPrompt()
-      : buildCrawlerPrompt();
+      this.explorerRun = explorerRun;
+      this.systemPrompt = testRun
+        ? buildTestPrompt()
+        : buildExplorerPrompt();
     this.usage = TokenUsageSchema.parse({});
     this.toolRegistry = createToolRegistry();
     this.log.trace(
@@ -244,8 +244,8 @@ export class AIClient {
                       y,
                     );
                 }
-                if (this.crawlerRun) {
-                  this.crawlerRun.addStep({
+                if (this.explorerRun) {
+                  this.explorerRun.addStep({
                     ...toolResult.args,
                     result: toolResult.result.output,
                   });

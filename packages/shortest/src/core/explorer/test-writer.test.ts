@@ -2,11 +2,11 @@ import { describe, test, expect } from "vitest";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { writeCrawlerTests } from "./test-writer";
+import { writeExplorerTests } from "./test-writer";
 
-describe("writeCrawlerTests", () => {
+describe("writeExplorerTests", () => {
   test("writes natural language tests from flows", async () => {
-    const tempDir = await fs.mkdtemp(join(tmpdir(), "crawler-"));
+    const tempDir = await fs.mkdtemp(join(tmpdir(), "explorer-"));
     const flows = [
       {
         id: "auth/login",
@@ -17,7 +17,7 @@ describe("writeCrawlerTests", () => {
       },
     ];
 
-    await writeCrawlerTests(flows, tempDir);
+    await writeExplorerTests(flows, tempDir);
 
     const content = await fs.readFile(
       join(tempDir, "auth", "login.test.ts"),

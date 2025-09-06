@@ -1,22 +1,22 @@
 import { BrowserManager } from "@/browser/manager";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { AIClient } from "@/ai/client";
-import { CrawlerRun } from "./crawler-run";
+import { ExplorerRun } from "./explorer-run";
 import { UserFlow } from "./user-flow";
-import { CrawlerReporter } from "./crawler-reporter";
+import { ExplorerReporter } from "./explorer-reporter";
 import { getLogger, Log } from "@/log";
 import { ShortestStrictConfig, TestContext } from "@/types";
 
-export class CrawlerRunner {
+export class ExplorerRunner {
   private config: ShortestStrictConfig;
   private browserManager: BrowserManager;
-  private reporter: CrawlerReporter;
+  private reporter: ExplorerReporter;
   private log: Log;
 
   constructor(config: ShortestStrictConfig) {
     this.config = config;
     this.browserManager = new BrowserManager(config);
-    this.reporter = new CrawlerReporter();
+    this.reporter = new ExplorerReporter();
     this.log = getLogger();
   }
 
@@ -31,8 +31,8 @@ export class CrawlerRunner {
       testContext,
     });
 
-    const run = new CrawlerRun();
-    const aiClient = new AIClient({ browserTool, crawlerRun: run });
+    const run = new ExplorerRun();
+    const aiClient = new AIClient({ browserTool, explorerRun: run });
 
     let flows: UserFlow[] = [];
     try {
@@ -44,7 +44,7 @@ export class CrawlerRunner {
         this.reporter.onFlow(flow);
       }
     } catch (error) {
-      this.log.error("Crawler exploration failed", error as any);
+      this.log.error("Explorer exploration failed", error as any);
     }
 
     await this.browserManager.close();
