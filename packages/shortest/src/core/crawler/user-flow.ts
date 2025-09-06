@@ -1,12 +1,9 @@
-export interface FlowStep {
-  action: string;
-  selector?: string;
-  value?: string;
-  [key: string]: any;
-}
-
 export interface UserFlow {
   id: string;
-  steps: FlowStep[];
+  /**
+   * Natural language descriptions of the flow's steps. These should describe
+   * user intentions rather than low-level browser actions.
+   */
+  steps: string[];
   reusable?: boolean;
 }

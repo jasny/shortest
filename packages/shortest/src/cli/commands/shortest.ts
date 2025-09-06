@@ -8,6 +8,7 @@ import {
 import { executeCommand } from "@/cli/utils/command-builder";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
+import { CrawlerRunner, writeCrawlerTests } from "@/core/crawler";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger } from "@/log";
 import { LOG_LEVELS } from "@/log/config";
@@ -52,18 +53,24 @@ shortestCommand
     cliOptionsSchema.shape.baseUrl._def.defaultValue(),
   )
   .option("--no-cache", "Disable test action caching")
+  .option(
+    "--crawl [dir]",
+    "Discover user flows and generate tests. Optionally specify output directory",
+  )
   .argument(
     "[test-pattern]",
     "Test pattern to run",
     cliOptionsSchema.shape.testPattern._def.defaultValue(),
   )
   .action(async (testPattern, _options, command) => {
-    await executeCommand(
-      command.name(),
-      command.optsWithGlobals(),
-      async () =>
-        await executeTestRunnerCommand(testPattern, command.optsWithGlobals()),
-    );
+    await executeCommand(command.name(), command.optsWithGlobals(), async () => {
+      const opts = command.optsWithGlobals();
+      if (opts.crawl !== undefined) {
+        await executeCrawlerCommand(opts.crawl, opts);
+      } else {
+        await executeTestRunnerCommand(testPattern, opts);
+      }
+    });
   });
 
 const executeTestRunnerCommand = async (testPattern: string, options: any) => {
@@ -110,3 +117,43 @@ const executeTestRunnerCommand = async (testPattern: string, options: any) => {
     await cleanUpCache();
   }
 };
+
+const deriveTestDirectory = (pattern: string): string | null => {
+  const match = pattern.match(/^[^*?{\[]+/);
+  if (!match) return null;
+  const dir = match[0].replace(/\/$/, "");
+  return dir || null;
+};
+
+const executeCrawlerCommand = async (dirOption: string | boolean, options: any) => {
+  const log = getLogger();
+
+  const cliOptions: CLIOptions = {
+    headless: options.headless,
+    baseUrl: options.target,
+    noCache: !options.cache,
+    testPattern: undefined,
+  };
+
+  log.trace("Initializing config for crawler", { cliOptions });
+  await initializeConfig({ cliOptions });
+  const config = getConfig();
+
+  let targetDir: string | null = typeof dirOption === "string" ? dirOption : null;
+  if (!targetDir) {
+    targetDir = deriveTestDirectory(config.testPattern);
+  }
+
+  if (!targetDir) {
+    throw new ShortestError(
+      "Could not determine test directory from configuration. Please specify one using --crawl <dir>.",
+    );
+  }
+
+  log.trace("Running crawler", { targetDir });
+  const runner = new CrawlerRunner(config);
+  const flows = await runner.discoverFlows();
+  await writeCrawlerTests(flows, targetDir);
+};
+
+export { deriveTestDirectory };
