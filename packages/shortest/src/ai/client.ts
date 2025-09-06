@@ -6,16 +6,18 @@ import {
   LanguageModelV1,
   NoSuchToolError,
 } from "ai";
-import { SYSTEM_PROMPT } from "@/ai/prompts";
 import { createProvider } from "@/ai/provider";
 import { AIJSONResponse, extractJsonPayload } from "@/ai/utils/json";
 import { BrowserTool } from "@/browser/core/browser-tool";
+import { CrawlerRun } from "@/core/crawler/crawler-run";
 import { TestRun } from "@/core/runner/test-run";
 import { getConfig } from "@/index";
 import { getLogger, Log } from "@/log";
 import { createToolRegistry, ToolRegistry } from "@/tools/index";
 import { TokenUsage, TokenUsageSchema } from "@/types/ai";
 import { AIConfig } from "@/types/config";
+import { buildCrawlerPrompt } from "./prompts/crawler-prompt-builder";
+import { buildTestPrompt } from "./prompts/test-prompt-builder";
 import {
   getErrorDetails,
   AIError,
@@ -78,19 +80,23 @@ export class AIClient {
   private client: LanguageModelV1;
   private browserTool: BrowserTool;
   private conversationHistory: Array<CoreMessage> = [];
-  private testRun: TestRun;
+  private testRun?: TestRun;
+  private crawlerRun?: CrawlerRun;
   private log: Log;
   private usage: TokenUsage;
   private apiRequestCount: number = 0;
   private toolRegistry: ToolRegistry;
   private _tools: Record<string, Tool> | null = null;
   private configAi: AIConfig;
+  private systemPrompt: string;
   constructor({
     browserTool,
     testRun,
+    crawlerRun,
   }: {
     browserTool: BrowserTool;
-    testRun: TestRun;
+    testRun?: TestRun;
+    crawlerRun?: CrawlerRun;
   }) {
     this.log = getLogger();
     this.log.trace("Initializing AIClient");
@@ -98,6 +104,10 @@ export class AIClient {
     this.configAi = getConfig().ai;
     this.browserTool = browserTool;
     this.testRun = testRun;
+    this.crawlerRun = crawlerRun;
+    this.systemPrompt = testRun
+      ? buildTestPrompt()
+      : buildCrawlerPrompt();
     this.usage = TokenUsageSchema.parse({});
     this.toolRegistry = createToolRegistry();
     this.log.trace(
@@ -205,7 +215,7 @@ export class AIClient {
           });
 
           resp = await generateText({
-            system: SYSTEM_PROMPT,
+            system: this.systemPrompt,
             model: this.client,
             maxTokens: 1024,
             tools: this.tools,
@@ -234,17 +244,25 @@ export class AIClient {
                       y,
                     );
                 }
-                this.testRun.addStep({
-                  reasoning: result.text,
-                  action: {
-                    name: toolResult.args.action,
-                    input: toolResult.args,
-                    type: "tool_use",
-                  },
-                  result: toolResult.result.output,
-                  extras,
-                  timestamp: Date.now(),
-                });
+                if (this.crawlerRun) {
+                  this.crawlerRun.addStep({
+                    ...toolResult.args,
+                    result: toolResult.result.output,
+                  });
+                }
+                if (this.testRun) {
+                  this.testRun.addStep({
+                    reasoning: result.text,
+                    action: {
+                      name: toolResult.args.action,
+                      input: toolResult.args,
+                      type: "tool_use",
+                    },
+                    result: toolResult.result.output,
+                    extras,
+                    timestamp: Date.now(),
+                  });
+                }
               }
             },
           });
