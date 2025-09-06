@@ -1,15 +1,7 @@
-import { FlowStep, UserFlow } from "./user-flow";
-
 export class CrawlerRun {
-  public flows: UserFlow[] = [];
-  private currentSteps: FlowStep[] = [];
+  public steps: any[] = [];
 
-  addStep(step: FlowStep): void {
-    this.currentSteps.push(step);
-  }
-
-  finalizeFlow(id: string, reusable: boolean = false): void {
-    this.flows.push({ id, steps: [...this.currentSteps], reusable });
-    this.currentSteps = [];
+  addStep(step: any): void {
+    this.steps.push(step);
   }
 }

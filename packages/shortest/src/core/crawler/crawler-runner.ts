@@ -31,18 +31,24 @@ export class CrawlerRunner {
       testContext,
     });
 
-    const aiClient = new AIClient({ browserTool });
-
     const run = new CrawlerRun();
+    const aiClient = new AIClient({ browserTool, crawlerRun: run });
 
+    let flows: UserFlow[] = [];
     try {
-      await aiClient.runAction("Explore the application");
+      const { response } = await aiClient.runAction("Explore the application");
+      flows = Array.isArray((response as any).flows)
+        ? ((response as any).flows as UserFlow[])
+        : [];
+      for (const flow of flows) {
+        this.reporter.onFlow(flow);
+      }
     } catch (error) {
       this.log.error("Crawler exploration failed", error as any);
     }
 
     await this.browserManager.close();
-    this.reporter.onRunEnd(run.flows);
-    return run.flows;
+    this.reporter.onRunEnd(flows);
+    return flows;
   }
 }

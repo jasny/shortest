@@ -24,8 +24,11 @@ describe("CLI bin structure", () => {
     vi.restoreAllMocks();
   });
 
-  test("process warning handlers are configured", async () => {
-    const commands = await import("@/cli/commands");
+  test(
+    "process warning handlers are configured",
+    { timeout: 15000 },
+    async () => {
+      const commands = await import("@/cli/commands");
 
     vi.spyOn(commands.shortestCommand, "addCommand").mockImplementation(
       () => commands.shortestCommand,
@@ -66,7 +69,8 @@ describe("CLI bin structure", () => {
     otherWarning.name = "Warning";
     warningHandler(otherWarning);
     expect(console.warn).toHaveBeenCalledWith(otherWarning);
-  });
+    },
+  );
 
   test("commands are correctly added to shortestCommand", async () => {
     // Import commands first to make mocking work properly

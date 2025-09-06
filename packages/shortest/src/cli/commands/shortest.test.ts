@@ -10,15 +10,17 @@ import { executeCommand } from "@/cli/utils/command-builder";
 import { TestRunner } from "@/core/runner";
 import { initializeConfig } from "@/index";
 
+const { mockGetConfig } = vi.hoisted(() => ({
+  mockGetConfig: vi.fn().mockReturnValue({ testPattern: "test-pattern" }),
+}));
+
 vi.mock("@/cli/utils/command-builder", () => ({
   executeCommand: vi.fn(),
 }));
 
 vi.mock("@/index", () => ({
   initializeConfig: vi.fn(),
-  getConfig: vi.fn().mockReturnValue({
-    testPattern: "test-pattern",
-  }),
+  getConfig: mockGetConfig,
 }));
 
 const mockInitialize = vi.fn().mockResolvedValue(undefined);
@@ -35,6 +37,22 @@ vi.mock("@/cache", () => ({
   cleanUpCache: vi.fn(),
   purgeLegacyCache: vi.fn(),
   purgeLegacyScreenshots: vi.fn(),
+}));
+
+const { mockDiscoverFlows, mockWriteTests } = vi.hoisted(() => {
+  return {
+    mockDiscoverFlows: vi
+      .fn()
+      .mockResolvedValue([{ id: "flow", steps: ["user can login"] }]),
+    mockWriteTests: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+vi.mock("@/core/crawler", () => ({
+  CrawlerRunner: vi.fn().mockImplementation(() => ({
+    discoverFlows: mockDiscoverFlows,
+  })),
+  writeCrawlerTests: mockWriteTests,
 }));
 
 vi.mock("@/log", () => ({
@@ -70,6 +88,9 @@ describe("shortest command", () => {
     ).toBeDefined();
     expect(
       shortestCommand.options.find((opt) => opt.long === "--no-cache"),
+    ).toBeDefined();
+    expect(
+      shortestCommand.options.find((opt) => opt.long === "--crawl"),
     ).toBeDefined();
   });
 
@@ -125,5 +146,43 @@ describe("shortest command", () => {
     expect(mockExecute).toHaveBeenCalledWith("test-pattern", 123);
 
     expect(cleanUpCache).toHaveBeenCalled();
+  });
+
+  test("executeCrawlerCommand runs crawler and writes tests", async () => {
+    await shortestCommand.parseAsync(["--crawl", "out"], { from: "user" });
+
+    const callback = vi.mocked(executeCommand).mock.calls[0][2];
+    await callback({});
+
+    expect(initializeConfig).toHaveBeenCalled();
+    expect(mockDiscoverFlows).toHaveBeenCalled();
+    expect(mockWriteTests).toHaveBeenCalledWith(
+      [{ id: "flow", steps: ["user can login"] }],
+      "out",
+    );
+  });
+
+  test("executeCrawlerCommand infers directory from config", async () => {
+    mockGetConfig.mockReturnValue({ testPattern: "tests/**/*.test.ts" });
+    await shortestCommand.parseAsync(["--crawl"], { from: "user" });
+
+    const callback = vi.mocked(executeCommand).mock.calls[0][2];
+    await callback({});
+
+    expect(mockWriteTests).toHaveBeenCalledWith(
+      [{ id: "flow", steps: ["user can login"] }],
+      "tests",
+    );
+  });
+
+  test("executeCrawlerCommand errors when directory cannot be determined", async () => {
+    mockGetConfig.mockReturnValue({ testPattern: "**/*.test.ts" });
+    await shortestCommand.parseAsync(["--crawl"], { from: "user" });
+
+    const callback = vi.mocked(executeCommand).mock.calls[0][2];
+
+    await expect(callback({})).rejects.toThrow(
+      "Could not determine test directory",
+    );
   });
 });
