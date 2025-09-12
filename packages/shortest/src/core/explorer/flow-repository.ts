@@ -14,6 +14,7 @@ export class FlowRepository {
   }
 
   async save(flows: TestPlan[]): Promise<void> {
+    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
     await fs.writeFile(
       this.filePath,
       JSON.stringify({ testPlans: flows }, null, 2),

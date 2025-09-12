@@ -93,7 +93,7 @@ export class TestGenerator {
 
     const outputPath = path.join(SHORTEST_DIR_PATH, fileName);
     try {
-      await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
       await fs.writeFile(outputPath, lintedCode);
       this.log.info("Test file generated successfully", {
         path: outputPath,
