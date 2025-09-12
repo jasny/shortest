@@ -14,10 +14,14 @@ import { getGitInfo, GitInfo } from "@/utils/get-git-info";
 const TestPlanSchema = z.object({
   testPlans: z.array(
     z.object({
+      id: z.string(),
       steps: z.array(z.string()),
-      options: z.object({
-        requiresAuth: z.boolean().optional(),
-      }),
+      reusable: z.boolean().optional(),
+      options: z
+        .object({
+          requiresAuth: z.boolean().optional(),
+        })
+        .optional(),
     }),
   ),
 });

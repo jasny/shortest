@@ -39,22 +39,6 @@ vi.mock("@/cache", () => ({
   purgeLegacyScreenshots: vi.fn(),
 }));
 
-const { mockDiscoverFlows, mockWriteTests } = vi.hoisted(() => {
-  return {
-    mockDiscoverFlows: vi
-      .fn()
-      .mockResolvedValue([{ id: "flow", steps: ["user can login"] }]),
-    mockWriteTests: vi.fn().mockResolvedValue(undefined),
-  };
-});
-
-vi.mock("@/core/explorer", () => ({
-  ExplorerRunner: vi.fn().mockImplementation(() => ({
-    discoverFlows: mockDiscoverFlows,
-  })),
-  writeExplorerTests: mockWriteTests,
-}));
-
 vi.mock("@/log", () => ({
   getLogger: vi.fn().mockReturnValue({
     trace: vi.fn(),
@@ -88,9 +72,6 @@ describe("shortest command", () => {
     ).toBeDefined();
     expect(
       shortestCommand.options.find((opt) => opt.long === "--no-cache"),
-    ).toBeDefined();
-    expect(
-      shortestCommand.options.find((opt) => opt.long === "--explore"),
     ).toBeDefined();
   });
 
@@ -148,41 +129,4 @@ describe("shortest command", () => {
     expect(cleanUpCache).toHaveBeenCalled();
   });
 
-  test("executeExplorerCommand runs explorer and writes tests", async () => {
-    await shortestCommand.parseAsync(["--explore", "out"], { from: "user" });
-
-    const callback = vi.mocked(executeCommand).mock.calls[0][2];
-    await callback({});
-
-    expect(initializeConfig).toHaveBeenCalled();
-    expect(mockDiscoverFlows).toHaveBeenCalled();
-    expect(mockWriteTests).toHaveBeenCalledWith(
-      [{ id: "flow", steps: ["user can login"] }],
-      "out",
-    );
-  });
-
-  test("executeExplorerCommand infers directory from config", async () => {
-    mockGetConfig.mockReturnValue({ testPattern: "tests/**/*.test.ts" });
-    await shortestCommand.parseAsync(["--explore"], { from: "user" });
-
-    const callback = vi.mocked(executeCommand).mock.calls[0][2];
-    await callback({});
-
-    expect(mockWriteTests).toHaveBeenCalledWith(
-      [{ id: "flow", steps: ["user can login"] }],
-      "tests",
-    );
-  });
-
-  test("executeExplorerCommand errors when directory cannot be determined", async () => {
-    mockGetConfig.mockReturnValue({ testPattern: "**/*.test.ts" });
-    await shortestCommand.parseAsync(["--explore"], { from: "user" });
-
-    const callback = vi.mocked(executeCommand).mock.calls[0][2];
-
-    await expect(callback({})).rejects.toThrow(
-      "Could not determine test directory",
-    );
-  });
 });

@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import { UserFlow } from "./user-flow";
+import { TestPlan } from "@/core/test-planner";
 import { getLogger, Log } from "@/log";
 
 export class ExplorerReporter {
@@ -9,11 +9,11 @@ export class ExplorerReporter {
     this.log = getLogger();
   }
 
-  onFlow(flow: UserFlow): void {
+  onFlow(flow: TestPlan): void {
     this.log.info(pc.green(`✓ discovered flow: ${flow.id}`));
   }
 
-  onRunEnd(flows: UserFlow[]): void {
+  onRunEnd(flows: TestPlan[]): void {
     this.log.info(pc.cyan(`Discovered ${flows.length} flow(s)`));
   }
 }
