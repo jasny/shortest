@@ -20,6 +20,7 @@ node_modules/
 # Build outputs
 dist/
 *.tsbuildinfo
+packages/shortest/shortest.config.ts
 
 # misc
 .DS_Store
