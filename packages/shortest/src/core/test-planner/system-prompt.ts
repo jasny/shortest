@@ -14,7 +14,9 @@ export const SYSTEM_PROMPT = `You are an expert test architect program specializ
 Return a JSON object with the following fields:
 - testPlans: An array of test plans
 Each test plan must have the following fields:
+- id: A unique string identifier for the plan. Use path-like slugs to group related flows (e.g. "auth/login").
 - steps: An array of strings representing the step (simple sentence, not more than 10 words)
+- reusable: Optional. A boolean indicating if this plan can be reused by other flows.
 - options: An object with the following fields:
   - options.requiresAuth: Optional. A boolean indicating if the step plan requires authentication (any step in the plan requires authentication).
 

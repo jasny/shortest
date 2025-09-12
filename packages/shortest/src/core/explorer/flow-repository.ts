@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 import path from "path";
 import { CACHE_DIR_PATH } from "@/cache";
-import { UserFlow } from "./user-flow";
+import { TestPlan } from "@/core/test-planner";
 import { getLogger, Log } from "@/log";
 
 export class FlowRepository {
@@ -13,15 +13,20 @@ export class FlowRepository {
     this.log = getLogger();
   }
 
-  async save(flows: UserFlow[]): Promise<void> {
-    await fs.writeFile(this.filePath, JSON.stringify({ flows }, null, 2), "utf-8");
+  async save(flows: TestPlan[]): Promise<void> {
+    await fs.mkdir(path.dirname(this.filePath), { recursive: true });
+    await fs.writeFile(
+      this.filePath,
+      JSON.stringify({ testPlans: flows }, null, 2),
+      "utf-8",
+    );
   }
 
-  async load(): Promise<UserFlow[]> {
+  async load(): Promise<TestPlan[]> {
     try {
       const content = await fs.readFile(this.filePath, "utf-8");
       const data = JSON.parse(content);
-      return Array.isArray(data.flows) ? data.flows : [];
+      return Array.isArray(data.testPlans) ? data.testPlans : [];
     } catch (error) {
       this.log.debug("No existing flow cache", { error });
       return [];

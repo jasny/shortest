@@ -8,6 +8,7 @@ import { FrameworkInfo } from "@/core/app-analyzer";
 import { formatCode } from "@/core/test-generator/utils/format-code";
 import { lintCode } from "@/core/test-generator/utils/lint-code";
 import { TestPlan, TestPlanner } from "@/core/test-planner";
+import { FlowRepository } from "@/core/explorer";
 import { getLogger } from "@/log";
 import { getErrorDetails } from "@/utils/errors";
 
@@ -22,8 +23,6 @@ export class TestGenerator {
   private readonly rootDir: string;
   private readonly frameworkInfo: FrameworkInfo;
   private readonly log = getLogger();
-  private readonly outputPath: string;
-  private readonly TEST_FILE_NAME = "functional.test.ts";
   private readonly cacheFrameworkDir: string;
 
   constructor(rootDir: string, frameworkInfo: FrameworkInfo) {
@@ -33,35 +32,56 @@ export class TestGenerator {
       DOT_SHORTEST_DIR_PATH,
       this.frameworkInfo.id,
     );
-    this.outputPath = path.join(SHORTEST_DIR_PATH, this.TEST_FILE_NAME);
   }
 
-  public async execute(options: { force?: boolean } = {}): Promise<void> {
+  public async execute(
+    options: { force?: boolean; fileName?: string } = {},
+  ): Promise<void> {
     this.log.trace("Generating tests...", { framework: this.frameworkInfo });
 
-    if (!options.force) {
-      if (await this.testFileExists()) {
+    const testPlans = await this.getTestPlans();
+
+    if (options.fileName) {
+      const outputFile = options.fileName.endsWith(".ts")
+        ? options.fileName
+        : `${options.fileName}.test.ts`;
+      if (!options.force && (await this.testFileExists(outputFile))) {
         this.log.trace("Test file already exists, skipping generation", {
-          path: this.outputPath,
+          path: path.join(SHORTEST_DIR_PATH, outputFile),
         });
         return;
       }
+      await this.generateTestFile(testPlans, outputFile);
+      return;
     }
 
-    await this.generateTestFile();
+    for (const plan of testPlans) {
+      const fileName = `${plan.id}.test.ts`;
+      if (!options.force && (await this.testFileExists(fileName))) {
+        this.log.trace("Test file already exists, skipping generation", {
+          path: path.join(SHORTEST_DIR_PATH, fileName),
+        });
+        continue;
+      }
+      await this.generateTestFile([plan], fileName);
+    }
   }
 
-  private async testFileExists(): Promise<boolean> {
+  private async testFileExists(fileName: string): Promise<boolean> {
+    const filePath = path.join(SHORTEST_DIR_PATH, fileName);
     try {
-      await fs.access(this.outputPath);
+      await fs.access(filePath);
       return true;
     } catch {
       return false;
     }
   }
 
-  private async generateTestFile(): Promise<void> {
-    const rawFileContent = await this.generateRawFileOutput();
+  private async generateTestFile(
+    plans: TestPlan[],
+    fileName: string,
+  ): Promise<void> {
+    const rawFileContent = await this.generateRawFileOutput(plans);
     const formattedCode = await formatCode(
       rawFileContent,
       this.frameworkInfo.dirPath,
@@ -71,11 +91,12 @@ export class TestGenerator {
       this.frameworkInfo.dirPath,
     );
 
+    const outputPath = path.join(SHORTEST_DIR_PATH, fileName);
     try {
-      await fs.mkdir(SHORTEST_DIR_PATH, { recursive: true });
-      await fs.writeFile(this.outputPath, lintedCode);
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+      await fs.writeFile(outputPath, lintedCode);
       this.log.info("Test file generated successfully", {
-        path: this.outputPath,
+        path: outputPath,
       });
     } catch (error) {
       this.log.error("Failed to write tests to file", getErrorDetails(error));
@@ -83,9 +104,7 @@ export class TestGenerator {
     }
   }
 
-  private async generateRawFileOutput(): Promise<string> {
-    const testPlans = await this.getTestPlans();
-
+  private async generateRawFileOutput(plans: TestPlan[]): Promise<string> {
     const importStatement = t.importDeclaration(
       [
         t.importSpecifier(
@@ -96,7 +115,7 @@ export class TestGenerator {
       t.stringLiteral("@antiwork/shortest"),
     );
 
-    const testStatements = testPlans
+    const testStatements = plans
       .map((plan) => {
         const statements: t.Statement[] = [];
 
@@ -160,7 +179,12 @@ export class TestGenerator {
       this.cacheFrameworkDir,
       TestPlanner.TEST_PLAN_FILE_NAME,
     );
-    const testPlanJson = await fs.readFile(testPlanJsonPath, "utf-8");
-    return JSON.parse(testPlanJson).data.testPlans;
+    try {
+      const testPlanJson = await fs.readFile(testPlanJsonPath, "utf-8");
+      return JSON.parse(testPlanJson).data.testPlans;
+    } catch {
+      const repo = new FlowRepository();
+      return await repo.load();
+    }
   }
 }

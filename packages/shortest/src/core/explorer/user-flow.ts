@@ -7,3 +7,12 @@ export interface UserFlow {
   steps: string[];
   reusable?: boolean;
 }
+
+import { TestPlan } from "@/core/test-planner";
+
+export const userFlowToTestPlan = (flow: UserFlow): TestPlan => ({
+  id: flow.id,
+  steps: flow.steps,
+  reusable: flow.reusable,
+  options: {},
+});

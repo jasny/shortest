@@ -2,8 +2,10 @@ import { BrowserManager } from "@/browser/manager";
 import { BrowserTool } from "@/browser/core/browser-tool";
 import { AIClient } from "@/ai/client";
 import { ExplorerRun } from "./explorer-run";
-import { UserFlow } from "./user-flow";
+import { UserFlow, userFlowToTestPlan } from "./user-flow";
 import { ExplorerReporter } from "./explorer-reporter";
+import { FlowRepository } from "./flow-repository";
+import { TestPlan } from "@/core/test-planner";
 import { getLogger, Log } from "@/log";
 import { ShortestStrictConfig, TestContext } from "@/types";
 
@@ -11,16 +13,18 @@ export class ExplorerRunner {
   private config: ShortestStrictConfig;
   private browserManager: BrowserManager;
   private reporter: ExplorerReporter;
+  private repository: FlowRepository;
   private log: Log;
 
   constructor(config: ShortestStrictConfig) {
     this.config = config;
     this.browserManager = new BrowserManager(config);
     this.reporter = new ExplorerReporter();
+    this.repository = new FlowRepository();
     this.log = getLogger();
   }
 
-  async discoverFlows(): Promise<UserFlow[]> {
+  async discoverFlows(): Promise<TestPlan[]> {
     const context = await this.browserManager.launch();
     const page = context.pages()[0];
 
@@ -40,15 +44,17 @@ export class ExplorerRunner {
       flows = Array.isArray((response as any).flows)
         ? ((response as any).flows as UserFlow[])
         : [];
-      for (const flow of flows) {
-        this.reporter.onFlow(flow);
-      }
     } catch (error) {
       this.log.error("Explorer exploration failed", error as any);
     }
 
     await this.browserManager.close();
-    this.reporter.onRunEnd(flows);
-    return flows;
+    const testPlans = flows.map(userFlowToTestPlan);
+    for (const plan of testPlans) {
+      this.reporter.onFlow(plan);
+    }
+    await this.repository.save(testPlans);
+    this.reporter.onRunEnd(testPlans);
+    return testPlans;
   }
 }

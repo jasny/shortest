@@ -6,6 +6,7 @@ import { githubCodeCommand } from "@/cli/commands/github-code";
 import { initCommand } from "@/cli/commands/init";
 import { planCommand } from "@/cli/commands/plan";
 import { shortestCommand } from "@/cli/commands/shortest";
+import { exploreCommand } from "@/cli/commands/explore";
 
 export {
   shortestCommand,
@@ -17,4 +18,5 @@ export {
   analyzeCommand,
   planCommand,
   generateCommand,
+  exploreCommand,
 };

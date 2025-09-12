@@ -8,7 +8,6 @@ import {
 import { executeCommand } from "@/cli/utils/command-builder";
 import { ENV_LOCAL_FILENAME } from "@/constants";
 import { TestRunner } from "@/core/runner";
-import { ExplorerRunner, writeExplorerTests } from "@/core/explorer";
 import { getConfig, initializeConfig } from "@/index";
 import { getLogger } from "@/log";
 import { LOG_LEVELS } from "@/log/config";
@@ -53,10 +52,6 @@ shortestCommand
     cliOptionsSchema.shape.baseUrl._def.defaultValue(),
   )
   .option("--no-cache", "Disable test action caching")
-  .option(
-    "--explore [dir]",
-    "Discover user flows and generate tests. Optionally specify output directory",
-  )
   .argument(
     "[test-pattern]",
     "Test pattern to run",
@@ -65,11 +60,7 @@ shortestCommand
   .action(async (testPattern, _options, command) => {
     await executeCommand(command.name(), command.optsWithGlobals(), async () => {
       const opts = command.optsWithGlobals();
-      if (opts.explore !== undefined) {
-        await executeExplorerCommand(opts.explore, opts);
-      } else {
-        await executeTestRunnerCommand(testPattern, opts);
-      }
+      await executeTestRunnerCommand(testPattern, opts);
     });
   });
 
@@ -118,45 +109,3 @@ const executeTestRunnerCommand = async (testPattern: string, options: any) => {
   }
 };
 
-const deriveTestDirectory = (pattern: string): string | null => {
-  const match = pattern.match(/^[^*?{\[]+/);
-  if (!match) return null;
-  const dir = match[0].replace(/\/$/, "");
-  return dir || null;
-};
-
-const executeExplorerCommand = async (
-  dirOption: string | boolean,
-  options: any,
-) => {
-  const log = getLogger();
-
-  const cliOptions: CLIOptions = {
-    headless: options.headless,
-    baseUrl: options.target,
-    noCache: !options.cache,
-    testPattern: undefined as any,
-  };
-
-  log.trace("Initializing config for explorer", { cliOptions });
-  await initializeConfig({ cliOptions });
-  const config = getConfig();
-
-  let targetDir: string | null = typeof dirOption === "string" ? dirOption : null;
-  if (!targetDir) {
-    targetDir = deriveTestDirectory(config.testPattern);
-  }
-
-  if (!targetDir) {
-    throw new ShortestError(
-      "Could not determine test directory from configuration. Please specify one using --explore <dir>.",
-    );
-  }
-
-  log.trace("Running explorer", { targetDir });
-  const runner = new ExplorerRunner(config);
-  const flows = await runner.discoverFlows();
-  await writeExplorerTests(flows, targetDir);
-};
-
-export { deriveTestDirectory };

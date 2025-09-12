@@ -10,6 +10,7 @@ import {
   analyzeCommand,
   planCommand,
   generateCommand,
+  exploreCommand,
 } from "@/cli/commands";
 import { getLogger } from "@/log/index";
 import { ShortestError } from "@/utils/errors";
@@ -46,6 +47,9 @@ planCommand.copyInheritedSettings(shortestCommand);
 
 shortestCommand.addCommand(generateCommand);
 generateCommand.copyInheritedSettings(shortestCommand);
+
+shortestCommand.addCommand(exploreCommand);
+exploreCommand.copyInheritedSettings(shortestCommand);
 
 const main = async () => {
   try {
